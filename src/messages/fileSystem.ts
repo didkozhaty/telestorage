@@ -1,3 +1,4 @@
+import type { FileStored, Folder, Tree } from '../types/folder';
 import io from './io';
 const parse = (folder: string): Folder => {
     const obj = {} as Folder;

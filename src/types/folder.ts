@@ -1,16 +1,16 @@
-type FileFolder = {
+export type FileFolder = {
     parent: number;
     dir: string;
     files: Record<string, number>;
     id: number;
 }
-type Folder = FileFolder & {
+export type Folder = FileFolder & {
     folders: Record<string, number>;
 }
-type Tree = (FileFolder & {
+export type Tree = (FileFolder & {
     folders: Record<string, Tree>;
 }) | Folder;
-type FileStored = {
+export type FileStored = {
     id: number;
     name: string;
 }

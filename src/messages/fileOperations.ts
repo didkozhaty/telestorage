@@ -1,6 +1,7 @@
 import root from "./root";
 import io from "./io";
 import fs from "./fileSystem";
+import type { FileStored, Folder, Tree } from "../types/folder";
 const addFile = async (filename: string, content: Blob, path: string) => {
     const folder = await fs.relative(fs.parse(await root()) as Folder, path) as Folder;
     const msg = await io.msg.sendFile(filename, {file: content, filename}, {reply_parameters: {message_id: folder.id}});
