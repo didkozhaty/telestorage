@@ -1,5 +1,5 @@
-import data from '../data';
-import {type APIResponse, type GeneralFile, type MessageWithFile, type ReplyMessage, type Message} from '../types/message';
+import data from '../data.js';
+import {type APIResponse, type GeneralFile, type MessageWithFile, type ReplyMessage, type Message} from '../types/message.js';
 const objectToFormData = (obj?: Object, formData = new FormData()): FormData => {
     Object.entries(obj || {}).forEach(([key, value]) => {
         if (typeof value === 'object' && value !== null) {
@@ -34,7 +34,7 @@ const sendFile = (text: string, file: {file: Blob, filename?: string}, parameter
 const getMessage = (message_id: number) => reply('read', message_id)
 .then((msg: ReplyMessage) => {
     if (data.deleteReadMessages) 
-        deleteMessage(msg.id);
+        deleteMessage(msg.message_id);
     return msg.reply_to_message;
 });
 const getFile = (file: GeneralFile): Promise<Blob> => 

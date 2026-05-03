@@ -1,11 +1,11 @@
-import root from "./root";
-import io from "./io";
-import fs from "./fileSystem";
-import type { FileStored, Folder, Tree } from "../types/folder";
+import root from "./root.js";
+import io from "./io.js";
+import fs from "./fileSystem.js";
+import type { FileStored, Folder, Tree } from "../types/folder.js";
 const addFile = async (filename: string, content: Blob, path: string) => {
     const folder = await fs.relative(fs.parse(await root()) as Folder, path) as Folder;
     const msg = await io.msg.sendFile(filename, {file: content, filename}, {reply_parameters: {message_id: folder.id}});
-    folder.files[filename] = msg.id;
+    folder.files[filename] = msg.message_id;
     const contentToWrite = new Blob([fs.toString(folder)], {type: 'text/plain'});
     await io.msg.edit.file(folder.id, {file: contentToWrite, filename: folder.dir.split('/').slice(-1)[0]});
 }
@@ -14,7 +14,7 @@ const addFolder = async (foldername: string, path: string) => {
     const msg = await io.msg.sendFile(foldername, {file: new Blob([''], {type: 'text/plain'}), filename: foldername}, 
         {reply_parameters: {message_id: folder.id}});
     const resultingFolder: Folder = {
-        id: msg.id,
+        id: msg.message_id,
         dir: foldername,
         parent: folder.id,
         files: {},

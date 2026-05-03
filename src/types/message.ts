@@ -1,5 +1,5 @@
 export type Message = {
-    id: number;
+    message_id: number;
     text: string;
 }
 export type ReplyMessage = Message & {

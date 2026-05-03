@@ -1,7 +1,7 @@
-import data from '../data';
-import { type APIResponse, type ChatInfo, type GeneralFile } from '../types/message';
-import io from './io';
-import fs from './fileSystem';
+import data from '../data.js';
+import { type APIResponse, type ChatInfo, type GeneralFile } from '../types/message.js';
+import io from './io.js';
+import fs from './fileSystem.js';
 const getRoot = async () => fetch(`${data.apiUrl}/getChat`, {
         method: 'POST',
         headers: {
@@ -28,9 +28,9 @@ const mount = async () => {
         },
         body: JSON.stringify({
             chat_id: data.channelId,
-            message_id: msg.id
+            message_id: msg.message_id
         })
-    }), io.msg.edit.file(msg.id, {file: new Blob([`~/\n-1\n${msg.id}`], {type: 'text/plain'}), filename: 'root'})]);
+    }), io.msg.edit.file(msg.message_id, {file: new Blob([`~/\n-1\n${msg.message_id}`], {type: 'text/plain'}), filename: 'root'})]);
     return msg;
 }
 export default getRoot;

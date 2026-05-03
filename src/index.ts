@@ -1,19 +1,33 @@
-import data from "./data";
-import operations from "./messages/fileOperations";
-import root from "./messages/root";
-function init(token: string, channelId: number): void {
+import data from "./data.js";
+import operations from "./messages/fileOperations.js";
+import getRoot from "./messages/root.js";
+
+export function init(token: string, channelId: number): void {
     data.token = token;
     data.channelId = channelId;
 }
-export default {
+
+export const mkdir = operations.addFolder;
+export const mv = operations.move;
+export const rm = operations.remove;
+export const rename = operations.rename;
+export const touch = operations.addFile;
+export const dir = operations.listDir;
+export const cat = operations.getFile;
+export const tree = operations.tree;
+export const root = getRoot;
+
+const telestorage = {
     init,
-    mkdir: operations.addFolder,
-    mv: operations.move,
-    rm: operations.remove,
-    rename: operations.rename,
-    touch: operations.addFile,
-    dir: operations.listDir,
-    cat: operations.getFile,
-    tree: operations.tree,
+    mkdir,
+    mv,
+    rm,
+    rename,
+    touch,
+    dir,
+    cat,
+    tree,
     root,
 }
+
+export default telestorage;

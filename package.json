@@ -1,18 +1,26 @@
 {
   "name": "telestorage",
-  "version": "1.0.3",
+  "version": "1.0.12",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "files": ["dist"],
   "description": "",
   "scripts": {
+    "prepack": "npm run build",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "devDependencies": {
     "@types/node": "^25.6.0",
     "typescript": "^6.0.2"

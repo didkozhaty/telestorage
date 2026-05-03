@@ -1,5 +1,5 @@
-import type { FileStored, Folder, Tree } from '../types/folder';
-import io from './io';
+import type { FileStored, Folder, Tree } from '../types/folder.js';
+import io from './io.js';
 const parse = (folder: string): Folder => {
     const obj = {} as Folder;
     const lines = folder.split('\n');

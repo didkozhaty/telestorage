@@ -5,14 +5,13 @@
     "rootDir": "./src",
     "outDir": "dist",
     "declaration": true,
-    "module": "ESNext",
+    "module": "NodeNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["node"],
     "skipLibCheck": true,
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "verbatimModuleSyntax": true,
+    /* Module mode */
+    "moduleResolution": "NodeNext",
     "moduleDetection": "force",
 
     /* Linting */
