@@ -55,7 +55,8 @@ const addFile = async (filename: string, content: Blob, path: string) => {
 
 const addFolder = async (foldername: string, path: string) => {
     const folder = await getFolder(path);
-    const msg = await io.msg.sendFile(foldername, {file: new Blob([''], {type: 'text/plain'}), filename: foldername},
+    const placeholder = new Blob([`${foldername}\n${folder.id}\n0`], {type: 'text/plain'});
+    const msg = await io.msg.sendFile(foldername, {file: placeholder, filename: foldername},
         {reply_parameters: {message_id: folder.id}});
     const resultingFolder: Folder = {
         id: msg.message_id,

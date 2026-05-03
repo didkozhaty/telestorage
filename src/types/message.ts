@@ -22,4 +22,7 @@ export type APIResponse<T> = {
     result?: T;
     description?: string;
     error_code?: number;
+    parameters?: {
+        retry_after?: number;
+    };
 }
