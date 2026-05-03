@@ -1,6 +1,7 @@
 export type Message = {
     message_id: number;
-    text: string;
+    text?: string;
+    caption?: string;
 }
 export type ReplyMessage = Message & {
     reply_to_message: Message;
@@ -14,9 +15,11 @@ export type GeneralFile = {
     file_size: number;
 }
 export type ChatInfo = {
-    pinned_message: Message;
+    pinned_message?: Message;
 }
 export type APIResponse<T> = {
     ok: boolean;
-    result: T;
+    result?: T;
+    description?: string;
+    error_code?: number;
 }

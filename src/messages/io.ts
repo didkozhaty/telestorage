@@ -1,35 +1,70 @@
 import data from '../data.js';
 import {type APIResponse, type GeneralFile, type MessageWithFile, type ReplyMessage, type Message} from '../types/message.js';
-const objectToFormData = (obj?: Object, formData = new FormData()): FormData => {
+
+type FormParameters = Record<string, unknown>;
+type FileInput = {file: Blob, filename?: string};
+
+const requireTelegramConfig = () => {
+    if (!data.apiUrl || data.channelId === null || !data.token) {
+        throw new Error("telestorage is not initialized. Call init(token, channelId) first.");
+    }
+
+    return {
+        apiUrl: data.apiUrl,
+        channelId: data.channelId,
+        token: data.token
+    };
+}
+
+const telegramResult = async <T>(response: Response): Promise<T> => {
+    const payload = await response.json() as APIResponse<T>;
+    if (!response.ok || !payload.ok || payload.result === undefined) {
+        const details = payload.description ?? response.statusText;
+        throw new Error(`Telegram API request failed: ${details}`);
+    }
+
+    return payload.result;
+}
+
+const objectToFormData = (obj?: FormParameters, formData = new FormData()): FormData => {
     Object.entries(obj || {}).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
         if (typeof value === 'object' && value !== null) {
             formData.append(key, JSON.stringify(value));
         } else {
-            formData.append(key, value);
+            formData.append(key, String(value));
         }
     });
     return formData;
 }
-const send = (text: string, parameters: Object) => {
+const send = (text: string, parameters: FormParameters = {}): Promise<Message> => {
+    const {apiUrl, channelId} = requireTelegramConfig();
     const body = objectToFormData(parameters);
     body.append('text', text);
-    body.append('chat_id', data.channelId!.toString());
-    return fetch(`${data.apiUrl}/sendMessage`, {
+    body.append('chat_id', channelId.toString());
+    return fetch(`${apiUrl}/sendMessage`, {
         method: 'POST',
         body
-    }).then(res => res.json()).then((response: APIResponse<Message>) => response.result);
+    }).then(telegramResult<Message>);
 }
-const reply = (text: string, message_id: number) => send(text, {reply_parameters: {message_id}}) as unknown as Promise<ReplyMessage>;
-const sendFile = (text: string, file: {file: Blob, filename?: string}, parameters?: Object) => {
+const reply = (text: string, message_id: number): Promise<ReplyMessage> => 
+    send(text, {reply_parameters: {message_id}}).then((message) => {
+        if (!('reply_to_message' in message)) {
+            throw new Error("Telegram response did not include reply_to_message");
+        }
+        return message as ReplyMessage;
+    });
+const sendFile = (text: string, file: FileInput, parameters: FormParameters = {}): Promise<MessageWithFile> => {
+    const {apiUrl, channelId} = requireTelegramConfig();
     const body = objectToFormData(parameters || {});
     body.append('caption', text);
-    body.append('chat_id', data.channelId!.toString());
+    body.append('chat_id', channelId.toString());
     body.append('document', file.file, file.filename || '');
     body.append('disable_content_type_detection', true.toString());
-    return fetch(`${data.apiUrl}/sendDocument`, {
+    return fetch(`${apiUrl}/sendDocument`, {
         method: 'POST',
         body
-    }).then(res => res.json()).then((response: APIResponse<MessageWithFile>) => response.result);
+    }).then(telegramResult<MessageWithFile>);
 };
 const getMessage = (message_id: number) => reply('read', message_id)
 .then((msg: ReplyMessage) => {
@@ -38,12 +73,12 @@ const getMessage = (message_id: number) => reply('read', message_id)
     return msg.reply_to_message;
 });
 const getFile = (file: GeneralFile): Promise<Blob> => 
-    fetch(`${data.apiUrl}/getFile?file_id=${file.file_id}`).then(res => res.json())
-    .then((response: APIResponse<{file_path: string}>) => response.result.file_path)
-    .then(filePath => fetch(`https://api.telegram.org/file/bot${data.token}/${filePath}`))
+    fetch(`${requireTelegramConfig().apiUrl}/getFile?file_id=${file.file_id}`).then(telegramResult<{file_path: string}>)
+    .then(response => response.file_path)
+    .then(filePath => fetch(`https://api.telegram.org/file/bot${requireTelegramConfig().token}/${filePath}`))
     .then(res => res.blob());
 export const readText = async (messageId: number): Promise<string> => 
-    getMessage(messageId).then(msg => msg.text);
+    getMessage(messageId).then(msg => msg.text ?? msg.caption ?? '');
 const isMessageWithFile = (msg: Message): msg is MessageWithFile => 'document' in msg;
 export const readFile = async (messageId: number): Promise<Blob> =>
     getMessage(messageId).then((msg) => {
@@ -51,22 +86,22 @@ export const readFile = async (messageId: number): Promise<Blob> =>
         throw new Error("Message does not contain a file");
     }).then(getFile);
 const deleteMessage = (messageId: number): Promise<void> => 
-    fetch(`${data.apiUrl}/deleteMessage`, {
+    fetch(`${requireTelegramConfig().apiUrl}/deleteMessage`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            chat_id: data.channelId,
+            chat_id: requireTelegramConfig().channelId,
             message_id: messageId
         })
-    }) as unknown as Promise<void>;
+    }).then(telegramResult<boolean>).then(() => undefined);
 const msgFileText = async (messageId: number): Promise<string> =>
     readFile(messageId).then(blob => blob.text());
 const fileText = (file: GeneralFile): Promise<string> =>
     getFile(file).then(blob => blob.text());
-const editText = (messageId: number, newText: string) =>
-    fetch(`${data.apiUrl}/editMessageCaption`, {
+const editText = (messageId: number, newText: string): Promise<Message> =>
+    fetch(`${requireTelegramConfig().apiUrl}/editMessageCaption`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -76,17 +111,21 @@ const editText = (messageId: number, newText: string) =>
             message_id: messageId,
             caption: newText
         })
-    }).then(r => r.json()).then((response: APIResponse<Message>) => response.result) as unknown as Promise<Message>;
-const editFile = (messageId: number, newFile: {file: Blob, filename?: string}) => {
+    }).then(telegramResult<Message>);
+const editFile = (messageId: number, newFile: FileInput): Promise<MessageWithFile> => {
+    const {apiUrl, channelId} = requireTelegramConfig();
     const body = new FormData();
-    body.append('chat_id', data.channelId!.toString());
+    body.append('chat_id', channelId.toString());
     body.append('message_id', messageId.toString());
+    body.append('media', JSON.stringify({
+        type: 'document',
+        media: 'attach://document'
+    }));
     body.append('document', newFile.file, newFile.filename || '');
-    body.append('disable_content_type_detection', true.toString());
-    return fetch(`${data.apiUrl}/editMessageMedia`, {
+    return fetch(`${apiUrl}/editMessageMedia`, {
         method: 'POST',
         body
-    }).then(res => res.json()).then((response: APIResponse<MessageWithFile>) => response.result);
+    }).then(telegramResult<MessageWithFile>);
 }
 
 export default {
