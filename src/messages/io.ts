@@ -3,7 +3,9 @@ import {type GeneralFile, type MessageWithFile, type ReplyMessage, type Message}
 import { requireTelegramConfig, telegramFetch } from './telegram.js';
 
 type FormParameters = Record<string, unknown>;
-type FileInput = {file: Blob, filename?: string};
+export type FileInput = {file: Blob | GeneralFile | string, filename?: string};
+
+const fileId = (file: GeneralFile | string): string => typeof file === 'string' ? file : file.file_id;
 
 const objectToFormData = (obj?: FormParameters, formData = new FormData()): FormData => {
     Object.entries(obj || {}).forEach(([key, value]) => {
@@ -38,7 +40,11 @@ const sendFile = (text: string, file: FileInput, parameters: FormParameters = {}
     const body = objectToFormData(parameters || {});
     body.append('caption', text);
     body.append('chat_id', channelId.toString());
-    body.append('document', file.file, file.filename || '');
+    if (file.file instanceof Blob) {
+        body.append('document', file.file, file.filename || '');
+    } else {
+        body.append('document', fileId(file.file));
+    }
     body.append('disable_content_type_detection', true.toString());
     return telegramFetch<MessageWithFile>(`${apiUrl}/sendDocument`, {
         method: 'POST',
@@ -96,11 +102,18 @@ const editFile = (messageId: number, newFile: FileInput): Promise<MessageWithFil
     const body = new FormData();
     body.append('chat_id', channelId.toString());
     body.append('message_id', messageId.toString());
-    body.append('media', JSON.stringify({
-        type: 'document',
-        media: 'attach://document'
-    }));
-    body.append('document', newFile.file, newFile.filename || '');
+    if (newFile.file instanceof Blob) {
+        body.append('media', JSON.stringify({
+            type: 'document',
+            media: 'attach://document'
+        }));
+        body.append('document', newFile.file, newFile.filename || '');
+    } else {
+        body.append('media', JSON.stringify({
+            type: 'document',
+            media: fileId(newFile.file)
+        }));
+    }
     return telegramFetch<MessageWithFile>(`${apiUrl}/editMessageMedia`, {
         method: 'POST',
         body
